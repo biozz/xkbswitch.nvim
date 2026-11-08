@@ -29,6 +29,10 @@ check(current == "com.apple.keylayout.ABC", "InsertLeave switches to English")
 vim.api.nvim_exec_autocmds("CmdlineLeave", {})
 vim.api.nvim_exec_autocmds("InsertEnter", {})
 check(current == "ru", "command line must preserve saved insert layout")
+current = "com.apple.keylayout.ABC"
+vim.api.nvim_exec_autocmds("FocusGained", {})
+vim.api.nvim_exec_autocmds("InsertEnter", {})
+check(current == "com.apple.keylayout.ABC", "focus gain must respect externally selected English")
 switch.setup({ xkb_switch_lib = "/test/library.dylib" })
 check(#vim.api.nvim_get_autocmds({ group = "XkbSwitch" }) == 5, "setup must be idempotent")
 vim.fn.libcall = actual_libcall

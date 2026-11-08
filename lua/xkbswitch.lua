@@ -49,9 +49,9 @@ local function activate(opts, lib, bin, token)
     if saved == "" then error("The library returned an empty current layout") end
     local group = vim.api.nvim_create_augroup("XkbSwitch", { clear = true })
     local function event(events, fn)
-      vim.api.nvim_create_autocmd(events, { group = group, callback = function()
+      vim.api.nvim_create_autocmd(events, { group = group, callback = function(ev)
         if token ~= generation then return end
-        local success, reason = pcall(fn)
+        local success, reason = pcall(fn, ev)
         if not success then
           vim.api.nvim_clear_autocmds({ group = group })
           warn(tostring(reason))
@@ -63,11 +63,11 @@ local function activate(opts, lib, bin, token)
       return mode:sub(1, 1) == "n" or mode == "v" or mode == "V" or mode == "\22"
     end
     event("InsertLeave", function() saved = get(); set(normal_layout) end)
-    event(opts.events_get_focus or M.events_get_focus, function()
+    event(opts.events_get_focus or M.events_get_focus, function(ev)
       -- CmdlineLeave commonly sees the English layout we selected ourselves.
       -- Do not overwrite the previously saved insert layout in that case.
       local current = get()
-      if current ~= normal_layout then saved = current end
+      if ev.event ~= "CmdlineLeave" or current ~= normal_layout then saved = current end
       if normal_mode() then set(normal_layout) end
     end)
     event({ "FocusLost", "InsertEnter" }, function() set(saved) end)
