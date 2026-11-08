@@ -1,190 +1,113 @@
-<div align="center">
-  <p>
-    <img src="assets/logo.png" align="center" alt="Logo" />
-  </p>
-</div>
+# xkbswitch.nvim
 
-Do you have more than one keyboard layout and constantly switching back to English just to be able to move?\
-Stop it, get some help!\
-With **xkbswitch.nvim** you can write comments/notes/documents in your language of choice, press `Esc` to enter Normal mode and instantly be ready to make your next move.\
-Plugin saves your actual layout before switching to English. The next time you enter Insert mode you will have your last saved layout.\
-**It also works with focus.** When Neovim loses focus plugin switches your layout to the last saved one. When Neovim gets focus plugin saves your layout, which you could've changed in another window and switches to English **only if** you need it. ([Logic](#about))\
-Now you need to switch your layout only when you need to type something in a different language! That's the way it always should have been.
+Automatically use English in Normal/Visual mode and restore your previous layout
+when entering Insert mode or leaving Neovim. Supports macOS and existing Linux
+xkb-switch/g3kb-switch installations.
 
-## macOS
-1. Install [input-source-switcher](https://github.com/vovkasm/input-source-switcher)
-```bash
-git clone https://github.com/vovkasm/input-source-switcher.git
-cd input-source-switcher
-mkdir build && cd build
-brew install cmake
-cmake ..
-make
-sudo make install
-```
+## macOS: automatic installation
 
-2. Install this plugin
-<table>
-<tr>
-  <th> Packer </th>
-  <th> Lazy (~/.config/nvim/lua/plugins/xkbswitch.lua) </th>
-  <th> Dein </th>
-</tr>
-<tr>
-<td>
+Requires Neovim 0.10+, macOS 11+, and internet access on the first launch.
+Apple Silicon and Intel are supported by the same universal binary package.
+`curl`, `tar`, and `shasum` are supplied by macOS. No Homebrew, compiler, CMake,
+or administrator access is needed on the target machine.
+
+With lazy.nvim:
 
 ```lua
-use 'ivanesmantovich/xkbswitch.nvim'
-```
-
-</td>
-<td>
-
-```lua
-return { 
-    {'ivanesmantovich/xkbswitch.nvim'} 
+{
+  "biozz/xkbswitch.nvim",
+  lazy = false,
+  opts = {},
 }
 ```
 
-</td>
-<td>
+Or call `require("xkbswitch").setup()` with another plugin manager.
+
+On first setup the plugin asynchronously downloads the pinned native release,
+checks its SHA-256 against that release's `SHA256SUMS`, and atomically installs it
+under `stdpath("data")/xkbswitch/native-v0.1.0/`. The package includes `bin/issw`,
+`lib/libInputSourceSwitcher.dylib`, and the upstream MIT license. Layout switching
+starts in the same session once installation and layout discovery finish.
+Until then Neovim works normally, without automatic switching.
+
+Subsequent startups reuse that version without network requests. Plugin updates
+only download again when the pinned native version changes. Concurrent Neovim
+processes use separate temporary directories and never expose partial packages.
+An interrupted process can leave a `.tmp-*` sibling directory; it is not reused
+and may safely be removed once that process exits.
+
+Download failures disable switching for that session with a warning.
+`:XkbSwitchInstall` retries setup and installation. `:checkhealth xkbswitch`
+reports the active library, installation directory, and errors. A corrupt
+installed package can be repaired by closing Neovim, deleting the version's
+managed directory, and starting Neovim again.
+
+## Options
 
 ```lua
-call dein#add('ivanesmantovich/xkbswitch.nvim')
+require("xkbswitch").setup({
+  auto_install = true, -- default on macOS; managed package takes precedence
+  -- normal_layout = "com.apple.keylayout.ABC", -- optional explicit override
+  -- user_layouts = { "com.apple.keylayout.ABC", "your.other.layout" },
+  -- events_get_focus = { "FocusGained", "CmdlineLeave" },
+})
 ```
 
-</td>
-</tr>
-</table>
+By default `issw -l` discovers available layouts. ABC and U.S. are both recognized
+as English. Set `normal_layout` for another preferred Normal-mode layout.
+`user_layouts` bypasses discovery; it does not install macOS keyboard layouts.
+Custom layouts still need to be installed and enabled in macOS.
 
-3. Add the setup line to your config
-```lua
-require('xkbswitch').setup()
-```
-
-## Linux / Unix (X.org / Wayland)
-1. Install package `libxkbfile-dev` (or `libxkbfile-devel` if you use Fedora)
-2. Install [xkb-switch](https://github.com/grwlf/xkb-switch)
-```bash
-git clone https://github.com/grwlf/xkb-switch.git
-cd xkb-switch
-mkdir build && cd build
-cmake ..
-make
-sudo make install
-sudo ldconfig
-```
-3. Install this plugin
-<table>
-<tr>
-  <th> Packer </th>
-  <th> Lazy (~/.config/nvim/lua/plugins/xkbswitch.lua) </th>
-  <th> Dein </th>
-</tr>
-<tr>
-<td>
+For an existing manually installed library:
 
 ```lua
-use 'ivanesmantovich/xkbswitch.nvim'
+require("xkbswitch").setup({
+  xkb_switch_lib = "/your/path/libInputSourceSwitcher.dylib",
+  switcher_command = "/your/path/issw", -- only needed for layout discovery
+})
 ```
 
-</td>
-<td>
+An explicit library always takes precedence and disables automatic downloading.
+With `auto_install = false`, macOS searches `/opt/homebrew/lib`, `/usr/local/lib`,
+and `/usr/lib` for the library, and uses `issw` on PATH to discover layouts.
+You can also provide `user_layouts` to avoid needing the CLI.
 
-```lua
-return { 
-    {'ivanesmantovich/xkbswitch.nvim'} 
-}
-```
+## Linux
 
-</td>
-<td>
+Automatic binary installation is currently macOS-only. Install
+[xkb-switch](https://github.com/grwlf/xkb-switch) or
+[g3kb-switch](https://github.com/lyokha/g3kb-switch) and its GNOME extension through
+your existing system setup, then call `setup()`. Explicit `xkb_switch_lib`,
+`switcher_command`, and `user_layouts` remain supported.
 
-```lua
-call dein#add('ivanesmantovich/xkbswitch.nvim')
-```
+## Tmux
 
-</td>
-</tr>
-</table>
+Enable focus notifications in `.tmux.conf`:
 
-4. Add the setup line to your config
-```lua
-require('xkbswitch').setup()
-```
-
-## GNOME 3 or 4 (g3kb-switch)
-1. Install `libglib2.0-dev` package (or `glib2-devel` if you use Fedora)
-2. Install [g3kb-switch](https://github.com/lyokha/g3kb-switch) and the [extension](https://github.com/lyokha/g3kb-switch#gnome-41-and-newer).
-```bash
-git clone https://github.com/lyokha/g3kb-switch.git
-cd g3kb-switch
-mkdir build && cd build
-cmake ..
-make
-sudo make install
-
-cd ../extension
-make install  # no sudo required!
-```
-3. Install this plugin
-<table>
-<tr>
-  <th> Packer </th>
-  <th> Lazy (~/.config/nvim/lua/plugins/xkbswitch.lua) </th>
-  <th> Dein </th>
-</tr>
-<tr>
-<td>
-
-```lua
-use 'ivanesmantovich/xkbswitch.nvim'
-```
-
-</td>
-<td>
-
-```lua
-return { 
-    {'ivanesmantovich/xkbswitch.nvim'} 
-}
-```
-
-</td>
-<td>
-
-```lua
-call dein#add('ivanesmantovich/xkbswitch.nvim')
-```
-
-</td>
-</tr>
-</table>
-
-4. Add the setup line to your config
-```lua
-require('xkbswitch').setup()
-```
-
-## With Tmux
-If you use Neovim inside of Tmux add this line to your `.tmux.conf`
 ```tmux
 set -g focus-events on
 ```
 
-## About
-This plugin uses autocommands to 'listen' when you are entering and exiting Insert mode, or when Neovim gets or loses focus, and libcalls to change your layout.
+## Native releases and development
 
-* **When leaving Insert Mode:**
-1) Save the current layout
-2) Switch to the US layout
+`scripts/build-native.sh` builds a pinned revision of
+[vovkasm/input-source-switcher](https://github.com/vovkasm/input-source-switcher)
+for arm64 and x86_64, targets macOS 11, applies ad-hoc signatures, and packages
+both components with relative library loading. Building requires Apple's
+Command Line Tools and CMake 3.28+; these are release-maintainer requirements.
 
-* **When entering Insert Mode:**
-1. Switch to the previously saved layout
+```sh
+./scripts/build-native.sh
+./tests/run.sh
+```
 
-* **When Neovim gets focus:**
-1. Save the current layout
-2. Switch to the US layout if Normal Mode or Visual Mode is the current mode
+Tests use an isolated data directory, simulated network failures, and the real
+packaged CLI/library. They do not change your active keyboard layout.
 
-* **When Neovim loses focus:**
-1. Switch to the previously saved layout
+The `Native macOS release` workflow builds and publishes assets for `native-v*`
+tags. For a new native version, change `M.version` in `install.lua`, update this
+README, commit, and push the matching tag. Never replace an existing version's
+assets: the plugin trusts the checksum supplied by the pinned GitHub release.
+The plugin lockfile pins the Lua code and thus its selected native version.
+
+The Lua plugin is GPL-3.0; the separately built upstream dependency is MIT.
