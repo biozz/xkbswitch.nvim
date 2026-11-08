@@ -1,6 +1,6 @@
 local M = {}
 local uv = vim.uv or vim.loop
-M.version = "native-v0.1.0"
+M.version = "native-v0.1.1"
 local asset = "input-source-switcher-macos-universal.tar.gz"
 local base = "https://github.com/biozz/xkbswitch.nvim/releases/download/" .. M.version .. "/"
 local pending

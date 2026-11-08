@@ -25,7 +25,7 @@ Or call `require("xkbswitch").setup()` with another plugin manager.
 
 On first setup the plugin asynchronously downloads the pinned native release,
 checks its SHA-256 against that release's `SHA256SUMS`, and atomically installs it
-under `stdpath("data")/xkbswitch/native-v0.1.0/`. The package includes `bin/issw`,
+under `stdpath("data")/xkbswitch/native-v0.1.1/`. The package includes `bin/issw`,
 `lib/libInputSourceSwitcher.dylib`, and the upstream MIT license. Layout switching
 starts in the same session once installation and layout discovery finish.
 Until then Neovim works normally, without automatic switching.
